@@ -1,0 +1,347 @@
+{
+  "name": "Exportdokumente prüfen & freigeben (Export & Logistik)",
+  "nodes": [
+    {
+      "id": "pm-export-doc-check-start",
+      "name": "Dokument eingegangen",
+      "position": [
+        40,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.manualTrigger",
+      "notes": "Rolle: Vertrieb"
+    },
+    {
+      "id": "pm-export-doc-check-extract",
+      "name": "Daten extrahieren (Skill 1)",
+      "position": [
+        320,
+        300
+      ],
+      "parameters": {
+        "url": "https://example.internal/sap-joule/extract",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "SLA: 0.1 h"
+    },
+    {
+      "id": "pm-export-doc-check-master",
+      "name": "Stammdaten abgleichen (Skill 2)",
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "url": "https://example.internal/sap-s-4hana/master",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "SLA: 0.1 h"
+    },
+    {
+      "id": "pm-export-doc-check-comply",
+      "name": "Trade-Compliance prüfen (Skill 3)",
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "url": "https://example.internal/sap-joule/comply",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "SLA: 0.1 h"
+    },
+    {
+      "id": "pm-export-doc-check-risk",
+      "name": "Risiko bewerten (Skill 4)",
+      "position": [
+        1160,
+        300
+      ],
+      "parameters": {
+        "url": "https://example.internal/decision-engine/risk",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "SLA: 0.1 h"
+    },
+    {
+      "id": "pm-export-doc-check-d-risk",
+      "name": "Risiko-Score?",
+      "position": [
+        1440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "pm-export-doc-check-d-risk-c0",
+              "leftValue": "={{ $json[\"d-risk\"] }}",
+              "rightValue": "AUTO_APPROVE",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2,
+      "type": "n8n-nodes-base.if",
+      "notes": "Rolle: Compliance"
+    },
+    {
+      "id": "pm-export-doc-check-review",
+      "name": "Manuelle Prüfung",
+      "position": [
+        1720,
+        300
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "typeVersion": 1.1,
+      "type": "n8n-nodes-base.wait",
+      "notes": "Rolle: Exportleitung | SLA: 24 h"
+    },
+    {
+      "id": "pm-export-doc-check-d-review",
+      "name": "Freigabe erteilt?",
+      "position": [
+        2000,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "pm-export-doc-check-d-review-c0",
+              "leftValue": "={{ $json[\"d-review\"] }}",
+              "rightValue": "ja",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "typeVersion": 2,
+      "type": "n8n-nodes-base.if",
+      "notes": "Rolle: Exportleitung"
+    },
+    {
+      "id": "pm-export-doc-check-case",
+      "name": "Vorgang anlegen & freigeben (Skill 5)",
+      "position": [
+        1720,
+        500
+      ],
+      "parameters": {
+        "url": "https://example.internal/sap-s-4hana/case",
+        "options": {}
+      },
+      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.httpRequest",
+      "notes": "SLA: 0.1 h"
+    },
+    {
+      "id": "pm-export-doc-check-reject",
+      "name": "Dokument zurückweisen",
+      "position": [
+        2280,
+        300
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.noOp",
+      "notes": "Rolle: Vertrieb | SLA: 2 h"
+    },
+    {
+      "id": "pm-export-doc-check-end",
+      "name": "Prozess abgeschlossen",
+      "position": [
+        2000,
+        500
+      ],
+      "parameters": {},
+      "typeVersion": 1,
+      "type": "n8n-nodes-base.noOp"
+    },
+    {
+      "id": "pm-export-doc-check-sticky",
+      "name": "Prozess-Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        40,
+        40
+      ],
+      "parameters": {
+        "content": "## Exportdokumente prüfen & freigeben\n**Branche:** Export & Logistik\n\nHandelsdokument (Proforma/Packliste/B/L) eingangsprüfen: Extraktion, Stammdaten-Abgleich, Trade-Compliance, Risiko-Entscheidung, HITL-Freigabe.",
+        "width": 460,
+        "height": 200
+      }
+    }
+  ],
+  "connections": {
+    "Dokument eingegangen": {
+      "main": [
+        [
+          {
+            "node": "Daten extrahieren (Skill 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daten extrahieren (Skill 1)": {
+      "main": [
+        [
+          {
+            "node": "Stammdaten abgleichen (Skill 2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stammdaten abgleichen (Skill 2)": {
+      "main": [
+        [
+          {
+            "node": "Trade-Compliance prüfen (Skill 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trade-Compliance prüfen (Skill 3)": {
+      "main": [
+        [
+          {
+            "node": "Risiko bewerten (Skill 4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risiko bewerten (Skill 4)": {
+      "main": [
+        [
+          {
+            "node": "Risiko-Score?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risiko-Score?": {
+      "main": [
+        [
+          {
+            "node": "Vorgang anlegen & freigeben (Skill 5)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manuelle Prüfung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manuelle Prüfung": {
+      "main": [
+        [
+          {
+            "node": "Freigabe erteilt?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freigabe erteilt?": {
+      "main": [
+        [
+          {
+            "node": "Vorgang anlegen & freigeben (Skill 5)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dokument zurückweisen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorgang anlegen & freigeben (Skill 5)": {
+      "main": [
+        [
+          {
+            "node": "Prozess abgeschlossen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dokument zurückweisen": {
+      "main": [
+        [
+          {
+            "node": "Prozess abgeschlossen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "generatedBy": "process_modeling",
+    "processId": "export-doc-check"
+  },
+  "tags": []
+}
